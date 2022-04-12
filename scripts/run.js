@@ -1,9 +1,14 @@
 const main = async () => {
+	const TVTokenContractFactory = await hre.ethers.getContractFactory('TVToken')
+	const TVTokenContract = await TVTokenContractFactory.deploy()
+	await TVTokenContract.deployed()
+	console.log('TVTokenContract Contract deployed to:', TVTokenContract.address)
+
 	const tweetVoterContractFactory = await hre.ethers.getContractFactory(
 		'TweetVoter'
 	)
 	const tweetVoterContract = await tweetVoterContractFactory.deploy()
-	await tweetVoterContract.deployed()
+	await tweetVoterContract.deployed(TVTokenContract.address)
 	console.log('Contract deployed to:', tweetVoterContract.address)
 }
 
