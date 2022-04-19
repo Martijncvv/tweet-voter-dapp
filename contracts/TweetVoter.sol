@@ -34,8 +34,6 @@ contract TVToken is ERC20, AccessControl {
 
 
 
-
-
 interface ITVToken {
     function mint(address, uint256) external;
     function burn(address, uint256) external;
@@ -58,10 +56,10 @@ contract TweetVoter  is Ownable {
 
     uint256 platformFee = 5; // %
 
-    uint256 tweetFeeToken = 5; // 2 dollar
-    uint256 tweetFeeEth = 0.00065 ether;
-    uint256 likeFeeToken = 1; // %
-    uint256 likeFeeEth = 0.00015 ether; // %
+    uint256 tweetTokenFee = 5; // 2 dollar
+    uint256 tweetEthFee = 0.00065 ether;
+    uint256 likeTokenFee = 1; // %
+    uint256 likeEthFee = 0.00015 ether; // %
 
     
     struct Tweet {
@@ -110,9 +108,9 @@ contract TweetVoter  is Ownable {
         uint accountTokenBalance = tvTokenContract.balanceOf(msg.sender);
         // uint feeInEther = uint(calculateMinRequiredWeiFee());
 
-        require(msg.value >= tweetFeeEth || accountTokenBalance >= tweetFeeToken, "TweetVoter: msg.value_TOO_LOW");
+        require(msg.value >= tweetEthFee || accountTokenBalance >= tweetTokenFee, "TweetVoter: msg.value_TOO_LOW");
 
-        if (msg.value >= tweetFeeEth) {
+        if (msg.value >= tweetEthFee) {
             tvTokenContract.mint(msg.sender, 5);
         } else {
             tvTokenContract.burn(msg.sender, 5);   
@@ -134,21 +132,21 @@ contract TweetVoter  is Ownable {
         tweetIdToTweet[tweetId] = newTweet;
         accountToTweetIds[msg.sender].push(tweetId);
         accountTweetsAmount[msg.sender] = accountTweetsAmount[msg.sender].add(1);
-        
-        tvTokenContract.mint(msg.sender, 5);
+
 
         emit SubmitTweet(msg.sender, tweetId, block.timestamp);
     }
 
     function likeTweet(uint256 tweetId) external payable {
         uint accountTokenBalance = tvTokenContract.balanceOf(msg.sender);
+        require(msg.value > likeEthFee || accountTokenBalance >= likeTokenFee, "TweetVoter: likeFee_TOO_LOW");
+
         Tweet storage likedTweet = tweetIdToTweet[tweetId];
 
-        require(msg.value > likeFeeEth || accountTokenBalance >= likeFeeToken, "TweetVoter: likeFee_TOO_LOW");
-
-
-        if (msg.value > likeFeeEth) {
-            (bool sent, ) = likedTweet.feeReceiver.call{value: msg.value * ((100 - platformFee) / 100)}("");
+        if (msg.value > likeEthFee) {
+           
+            uint platformFeeAmount = msg.value / 100 * platformFee;
+            (bool sent, ) = likedTweet.feeReceiver.call{value: (msg.value - platformFeeAmount)}("");
             require(sent, "Failed to send ETH");
             tvTokenContract.mint(msg.sender, 1);
         } else {
@@ -161,23 +159,23 @@ contract TweetVoter  is Ownable {
         emit LikedTweet(tweetId, likedTweet.likes, block.timestamp);
     }
 
-    function setTweetFeeToken(uint _tweetFeeToken) external onlyOwner {
-        tweetFeeToken = _tweetFeeToken;
+    function setTweetTokenFee(uint _tweetTokenFee) external onlyOwner {
+        tweetTokenFee = _tweetTokenFee;
     }
-    function setTweetFeeEth(uint _tweetFeeEth) external onlyOwner {
-        tweetFeeEth = _tweetFeeEth;
+    function setTweetEthFee(uint _tweetEthFee) external onlyOwner {
+        tweetEthFee = _tweetEthFee;
     }
-    function setLikeFeeToken(uint _likeFeeToken) external onlyOwner {
-        likeFeeToken = _likeFeeToken;
+    function setLikeTokenFee(uint _likeTokenFee) external onlyOwner {
+        likeTokenFee = _likeTokenFee;
     }
-    function setLikeFeeEth(uint _likeFeeEth) external onlyOwner {
-        likeFeeEth = _likeFeeEth;
+    function setLikeEthFee(uint _likeEthFee) external onlyOwner {
+        likeEthFee = _likeEthFee;
     }
 
     function getAllTweets() external view returns(Tweet[] memory) {
         Tweet[] memory allTweets = new Tweet[](totalTweetsCount);
-        for (uint256 i = 1; i <= totalTweetsCount; i++) {
-            allTweets[i] = tweetIdToTweet[i];
+        for (uint256 i = 0; i < totalTweetsCount; i++) {
+            allTweets[i] = tweetIdToTweet[i+1];
         }
         return allTweets;
     }
@@ -194,7 +192,7 @@ contract TweetVoter  is Ownable {
         return accountToTweetIds[account].length;
     }
 
-    function getAllTweetsByAccount(address account) external view returns(uint[] memory) {
+    function getAllTweetIdsByAccount(address account) external view returns(uint[] memory) {
         return  accountToTweetIds[account];
     }
 
