@@ -1,0 +1,46 @@
+#dashboard-field {
+	display: flex;
+}
+
+#dashboard-sidebar {
+	width: 20%;
+	padding: 10px 5px;
+
+	background-color: rgb(176, 201, 255);
+}
+
+#dashboard-account-tweetids {
+	display: flex;
+}
+#dashboard-input-form {
+	/* display: flex; */
+	/* flex-wrap: wrap; */
+	width: 80%;
+}
+.dashboard-input {
+	width: 100%;
+	/* margin-right: ; */
+}
+
+#dashboard-main {
+	width: 80%;
+	padding: 2% 2%;
+
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+
+	background-color: rgba(0, 0, 251, 0.094);
+}
+
+.dashboard-tweet {
+	width: 400px;
+	height: auto;
+	margin: 2%;
+
+	background: white;
+}
+
+.dashboard-tweet-interaction-field {
+	display: flex;
+}

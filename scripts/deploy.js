@@ -1,8 +1,8 @@
 const keccak256 = require('keccak256')
 const { ethers, waffle } = require('hardhat')
 
-// TVTokenContract Contract deployed to: 0xcBa34325bF536F366Cc5353aaa98E360BC316bdd
-// tweetvoter Contract deployed to: 0x4EB3d6b3Ca55e5d2c4751f963B59C9919bC1395e
+// TVTokenContract Contract deployed to: 0xAcdaDa3D89FE6db8665B21f4C08829D5B34493f8
+// tweetvoter Contract deployed to: 0xd011cdB042bFF4AdF420FA3Fe359058E4426b6e8
 
 const main = async () => {
 	const provider = waffle.provider

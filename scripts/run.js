@@ -270,6 +270,22 @@ const main = async () => {
 	await getTweetById
 	console.log('getTweetById Confirmed')
 	console.log(getTweetById)
+
+	console.log('\nFEE INFO')
+	getFees = await tweetVoterContract.connect(person_2).getFees()
+	await getFees
+	console.log('getFees Confirmed')
+	console.log(getFees)
+
+	setFee = await tweetVoterContract.connect(owner).setLikeTokenFee(4)
+	await setFee
+	console.log('setFee Confirmed')
+	console.log(setFee)
+
+	getFees = await tweetVoterContract.connect(person_2).getFees()
+	await getFees
+	console.log('getFees Confirmed')
+	console.log(getFees)
 }
 
 const runMain = async () => {

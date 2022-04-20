@@ -33,7 +33,6 @@ contract TVToken is ERC20, AccessControl {
 }
 
 
-
 interface ITVToken {
     function mint(address, uint256) external;
     function burn(address, uint256) external;
@@ -48,20 +47,6 @@ contract TweetVoter  is Ownable {
 
     using SafeMath for uint256;
 
-    ITVToken tvTokenContract;
-    AggregatorV3Interface internal priceFeed;
-    address private _owner;
-
-    uint256 totalTweetsCount = 0;
-
-    uint256 platformFee = 5; // %
-
-    uint256 tweetTokenFee = 5; // 2 dollar
-    uint256 tweetEthFee = 0.00065 ether;
-    uint256 likeTokenFee = 1; // %
-    uint256 likeEthFee = 0.00015 ether; // %
-
-    
     struct Tweet {
         uint256 tweetId;
         string tweetUrl;
@@ -69,10 +54,31 @@ contract TweetVoter  is Ownable {
         address tweetOwner;
         uint256 likes;
         uint256 timestamp;
-    }
-    
-    mapping(address => uint) public accountTweetsAmount;
 
+    }
+    struct PlatformFees {
+        uint256 platformFee; // %
+        uint256 tweetTokenFee;
+        uint256 tweetWeiFee; 
+        uint256 likeTokenFee; 
+        uint256 likeWeiFee;
+    }
+
+    ITVToken tvTokenContract;
+    AggregatorV3Interface internal priceFeed;
+    address private _owner;
+    uint256 internal totalTweetsCount  = 0;
+
+    PlatformFees internal Fees = PlatformFees({
+        platformFee: 5, // %
+        tweetTokenFee: 5,
+        tweetWeiFee: 0.00065 ether,
+        likeTokenFee: 1,
+        likeWeiFee:0.00015 ether
+    });
+    
+   
+    mapping(address => uint) public accountTweetsAmount;
     mapping(address => uint[]) public accountToTweetIds;
     mapping(uint => Tweet) public tweetIdToTweet;
 
@@ -80,7 +86,6 @@ contract TweetVoter  is Ownable {
         console.log("Constructor: Tweet Voter deployed");
 
         tvTokenContract = ITVToken(_tvTokenContract);
-     
     }
 
     fallback() external payable {
@@ -97,7 +102,6 @@ contract TweetVoter  is Ownable {
         require(sent, "Failed to send ETH");
     }
 
-
     function submitTweet(
         string memory _tweetUrl,
         address _feeReceiver
@@ -108,9 +112,9 @@ contract TweetVoter  is Ownable {
         uint accountTokenBalance = tvTokenContract.balanceOf(msg.sender);
         // uint feeInEther = uint(calculateMinRequiredWeiFee());
 
-        require(msg.value >= tweetEthFee || accountTokenBalance >= tweetTokenFee, "TweetVoter: msg.value_TOO_LOW");
+        require(msg.value >= Fees.tweetWeiFee || accountTokenBalance >= Fees.tweetTokenFee, "TweetVoter: msg.value_TOO_LOW");
 
-        if (msg.value >= tweetEthFee) {
+        if (msg.value >= Fees.tweetWeiFee) {
             tvTokenContract.mint(msg.sender, 5);
         } else {
             tvTokenContract.burn(msg.sender, 5);   
@@ -139,13 +143,13 @@ contract TweetVoter  is Ownable {
 
     function likeTweet(uint256 tweetId) external payable {
         uint accountTokenBalance = tvTokenContract.balanceOf(msg.sender);
-        require(msg.value > likeEthFee || accountTokenBalance >= likeTokenFee, "TweetVoter: likeFee_TOO_LOW");
+        require(msg.value > Fees.likeWeiFee || accountTokenBalance >= Fees.likeTokenFee, "TweetVoter: likeFee_TOO_LOW");
 
         Tweet storage likedTweet = tweetIdToTweet[tweetId];
 
-        if (msg.value > likeEthFee) {
+        if (msg.value > Fees.likeWeiFee) {
            
-            uint platformFeeAmount = msg.value / 100 * platformFee;
+            uint platformFeeAmount = msg.value / 100 * Fees.platformFee;
             (bool sent, ) = likedTweet.feeReceiver.call{value: (msg.value - platformFeeAmount)}("");
             require(sent, "Failed to send ETH");
             tvTokenContract.mint(msg.sender, 1);
@@ -159,17 +163,20 @@ contract TweetVoter  is Ownable {
         emit LikedTweet(tweetId, likedTweet.likes, block.timestamp);
     }
 
-    function setTweetTokenFee(uint _tweetTokenFee) external onlyOwner {
-        tweetTokenFee = _tweetTokenFee;
+    function setPlatformFee(uint _platformFee) external onlyOwner {
+        Fees.platformFee = _platformFee;
     }
-    function setTweetEthFee(uint _tweetEthFee) external onlyOwner {
-        tweetEthFee = _tweetEthFee;
+    function setTweetTokenFee(uint _tweetTokenFee) external onlyOwner {
+        Fees.tweetTokenFee = _tweetTokenFee;
+    }
+    function setTweetWeiFee(uint _tweetWeiFee) external onlyOwner {
+        Fees.tweetWeiFee = _tweetWeiFee;
     }
     function setLikeTokenFee(uint _likeTokenFee) external onlyOwner {
-        likeTokenFee = _likeTokenFee;
+        Fees.likeTokenFee = _likeTokenFee;
     }
-    function setLikeEthFee(uint _likeEthFee) external onlyOwner {
-        likeEthFee = _likeEthFee;
+    function setLikeWeiFee(uint _likeWeiFee) external onlyOwner {
+        Fees.likeWeiFee = _likeWeiFee;
     }
 
     function getAllTweets() external view returns(Tweet[] memory) {
@@ -194,6 +201,10 @@ contract TweetVoter  is Ownable {
 
     function getAllTweetIdsByAccount(address account) external view returns(uint[] memory) {
         return  accountToTweetIds[account];
+    }
+
+    function getFees() external view returns(PlatformFees memory) {
+         return  Fees;
     }
 
 }
