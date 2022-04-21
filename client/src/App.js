@@ -10,26 +10,28 @@ import TWEET_VOTER_CONTRACT_JSON from './utils/TweetVoter.json'
 import TVTOKEN_CONTRACT_JSON from './utils/TVToken.json'
 
 const TWEET_VOTER_CONTRACT_ADDRESS =
-	'0xd011cdB042bFF4AdF420FA3Fe359058E4426b6e8'
-const TVTOKEN_CONTRACT_ADDRESS = '0xAcdaDa3D89FE6db8665B21f4C08829D5B34493f8'
+	'0xAD24CEe9C6E4f51124634B2b9C923115333A8456'
+const TVTOKEN_CONTRACT_ADDRESS = '0xFbAb7b6d17B0cF5804d6D354c34Ca2607a274302'
 
 const tweetContractABI = TWEET_VOTER_CONTRACT_JSON.abi
 const tvTokenContractABI = TVTOKEN_CONTRACT_JSON.abi
 
 function App() {
 	const [currentAccount, setCurrentAccount] = useState('')
+	const [ethereum, setEthereum] = useState('')
 	const [provider, setProvider] = useState('')
-	const [signer, setSigner] = useState('')
+
 	const [tweetVoteContract, setTweetVoteContract] = useState('')
 	const [tvTokenContract, setTvTokenContract] = useState('')
 
 	useEffect(() => {
 		checkIfWalletIsConnected()
-	}, [])
+	}, [currentAccount])
 
 	const checkIfWalletIsConnected = async () => {
 		try {
 			const { ethereum } = window
+			setEthereum(ethereum)
 
 			if (!ethereum) {
 				console.log('Make sure you have metamask!')
@@ -41,7 +43,6 @@ function App() {
 			let etherProvider = new ethers.providers.Web3Provider(ethereum)
 			let etherSigner = etherProvider.getSigner()
 
-			setSigner(etherSigner)
 			setProvider(etherProvider)
 
 			const { chainId } = await etherProvider.getNetwork()
@@ -101,6 +102,8 @@ function App() {
 			{tweetVoteContract && (
 				<Dashboard
 					TWEET_VOTER_CONTRACT_ADDRESS={TWEET_VOTER_CONTRACT_ADDRESS}
+					TVTOKEN_CONTRACT_ADDRESS={TVTOKEN_CONTRACT_ADDRESS}
+					ethereum={ethereum}
 					currentAccount={currentAccount}
 					provider={provider}
 					tweetVoteContract={tweetVoteContract}

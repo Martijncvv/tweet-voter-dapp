@@ -3,11 +3,12 @@ import 'bootstrap/dist/css/bootstrap.css'
 import React, { useEffect, useState } from 'react'
 import { ethers } from 'ethers'
 import { TwitterTweetEmbed } from 'react-twitter-embed'
-
-import Button from 'react-bootstrap/Button'
+const TwitterLogo = require('../../static/twitter_logo.png')
 
 const Dashboard = ({
 	TWEET_VOTER_CONTRACT_ADDRESS,
+	TVTOKEN_CONTRACT_ADDRESS,
+	ethereum,
 	currentAccount,
 	provider,
 	tweetVoteContract,
@@ -25,99 +26,138 @@ const Dashboard = ({
 	const [accountTweetAmount, setAccountTweetAmount] = useState('')
 	const [accountTokenBalance, setAccountTokenBalance] = useState('')
 
-	const [infoBar, setInfoBar] = useState('This is a info alert—check it out')
-	const [sortingOption, setSortingOption] = useState('date')
+	const [infoBar, setInfoBar] = useState('')
+	const [sortingOption, setSortingOption] = useState('likes')
 
 	useEffect(() => {
 		getPlatformStats()
 		getAccountStats()
 		getAllTweets()
-	}, [])
+	}, [infoBar])
 
 	const getPlatformStats = async () => {
-		const amount = await tweetVoteContract.getTotalTweets()
-		setTotalPlatformTweets(amount.toNumber())
-
-		const platformFees = await tweetVoteContract.getFees()
-		let platformFeesCleaned = {
-			platformFee: platformFees.platformFee.toNumber(),
-			tweetTokenFee: platformFees.tweetTokenFee.toNumber(),
-			tweetWeiFee: platformFees.tweetEthFee.toNumber(),
-			likeTokenFee: platformFees.likeTokenFee.toNumber(),
-			likeWeiFee: platformFees.likeEthFee.toNumber(),
+		try {
+			const amount = await tweetVoteContract.getTotalTweets()
+			setTotalPlatformTweets(amount.toNumber())
+		} catch (error) {
+			console.log(error)
 		}
 
-		setPlatformFees(platformFeesCleaned)
+		try {
+			const platformFees = await tweetVoteContract.getFees()
 
-		const platformBalance = await provider.getBalance(
-			TWEET_VOTER_CONTRACT_ADDRESS
-		)
-		setPlatformBalance(platformBalance.toNumber())
+			let platformFeesCleaned = {
+				platformFee: platformFees.platformFee.toNumber(),
+				tweetEthFee: ethers.utils.formatEther(platformFees.tweetWeiFee),
+				likeEthFee: ethers.utils.formatEther(platformFees.likeWeiFee),
+				likeTokenFee: ethers.utils.formatEther(platformFees.likeTokenFee),
+				tweetTokenFee: ethers.utils.formatEther(platformFees.tweetTokenFee),
+			}
+			console.log('platformFeesCleaned', platformFeesCleaned)
+			setPlatformFees(platformFeesCleaned)
+		} catch (error) {
+			console.log(error)
+		}
+
+		try {
+			const platformBalance = await provider.getBalance(
+				TWEET_VOTER_CONTRACT_ADDRESS
+			)
+			setPlatformBalance(platformBalance.toNumber())
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	const getAccountStats = async () => {
-		const accountTweetIds = await tweetVoteContract.getAllTweetIdsByAccount(
-			currentAccount
-		)
-		let accountTweetIdsCleaned = []
-		accountTweetIds.forEach((tweetId) => {
-			accountTweetIdsCleaned.push(tweetId.toNumber())
-		})
-		setAccountTweetIds(accountTweetIdsCleaned)
+		try {
+			const accountTweetIds = await tweetVoteContract.getAllTweetIdsByAccount(
+				currentAccount
+			)
+			let accountTweetIdsCleaned = []
+			accountTweetIds.forEach((tweetId) => {
+				accountTweetIdsCleaned.push(tweetId.toNumber())
+			})
+			setAccountTweetIds(accountTweetIdsCleaned)
+		} catch (error) {
+			console.log(error)
+		}
 
-		const accountTweetAmount = await tweetVoteContract.getAccountTweetsAmount(
-			currentAccount
-		)
-		setAccountTweetAmount(accountTweetAmount.toNumber())
+		try {
+			const accountTweetAmount = await tweetVoteContract.getAccountTweetsAmount(
+				currentAccount
+			)
+			setAccountTweetAmount(accountTweetAmount.toNumber())
+		} catch (error) {
+			console.log(error)
+		}
 
-		const accountTokenBalance = await tvTokenContract.balanceOf(currentAccount)
-		setAccountTokenBalance(accountTokenBalance.toNumber())
+		try {
+			const accountTokenBalance = await tvTokenContract.balanceOf(
+				currentAccount
+			)
+			setAccountTokenBalance(ethers.utils.formatEther(accountTokenBalance))
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	const getAllTweets = async () => {
-		const allTweets = await tweetVoteContract.getAllTweets()
+		try {
+			const allTweets = await tweetVoteContract.getAllTweets()
 
-		let cleanedTweets = []
-		allTweets.forEach((tweet) => {
-			cleanedTweets.push({
-				id: tweet.tweetId.toNumber(),
-				url: tweet.tweetUrl.substring(tweet.tweetUrl.length - 19),
-				likes: tweet.likes.toNumber(),
-				owner: tweet.tweetOwner,
-				feeReceiver: tweet.feeReceiver,
-				timestamp: tweet.timestamp.toNumber(),
+			let cleanedTweets = []
+			allTweets.forEach((tweet) => {
+				cleanedTweets.push({
+					id: tweet.tweetId.toNumber(),
+					url: tweet.tweetUrl.split('/').at(-1),
+					likes: tweet.likes.toNumber(),
+					owner: tweet.tweetOwner,
+					feeReceiver: tweet.feeReceiver,
+					timestamp: tweet.timestamp.toNumber(),
+				})
 			})
-		})
-		setAllTweets(cleanedTweets)
-		console.log(cleanedTweets)
+			setAllTweets(cleanedTweets)
+			console.log(cleanedTweets)
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	const handleSubmitTweetButton = async (feeType) => {
 		if (tweetUrlInput && feeAddressInput) {
 			if (feeType === 'ethPayment') {
-				let submitTweetTx = await tweetVoteContract.submitTweet(
-					tweetUrlInput,
-					feeAddressInput,
-					{
-						value: platformFees.tweetWeiFee.toString(),
-					}
-				)
-				setInfoBar(`Mining... Tx ${submitTweetTx.hash}`)
-				console.log('Mining...Tx', submitTweetTx.hash)
-				await submitTweetTx.wait()
-				setInfoBar(`Mined -- Tx ${submitTweetTx.hash}`)
-				console.log('Mined -- Tx', submitTweetTx.hash)
-			} else {
-				let submitTweetTx = await tweetVoteContract.submitTweet(
-					tweetUrlInput,
-					feeAddressInput
-				)
+				try {
+					let submitTweetTx = await tweetVoteContract.submitTweet(
+						tweetUrlInput,
+						feeAddressInput,
+						{
+							value: platformFees.tweetEthFee * 10 ** 18,
+						}
+					)
 
-				setInfoBar(`Mining... Tx${submitTweetTx.hash}`)
-				console.log('Mining... Tx', submitTweetTx.hash)
-				await submitTweetTx.wait()
-				setInfoBar(`Mined -- Tx${submitTweetTx.hash}`)
-				console.log('Mined -- Tx', submitTweetTx.hash)
+					setInfoBar(`Mining... Tx ${submitTweetTx.hash}`)
+					console.log('Mining...Tx', submitTweetTx.hash)
+					await submitTweetTx.wait()
+					setInfoBar(`Mined -- Tx ${submitTweetTx.hash}`)
+					console.log('Mined -- Tx', submitTweetTx.hash)
+				} catch (error) {
+					console.log(error)
+				}
+			} else {
+				try {
+					let submitTweetTx = await tweetVoteContract.submitTweet(
+						tweetUrlInput,
+						feeAddressInput
+					)
+					setInfoBar(`Mining... Tx${submitTweetTx.hash}`)
+					console.log('Mining... Tx', submitTweetTx.hash)
+					await submitTweetTx.wait()
+					setInfoBar(`Mined -- Tx${submitTweetTx.hash}`)
+					console.log('Mined -- Tx', submitTweetTx.hash)
+				} catch (error) {
+					console.log(error)
+				}
 			}
 			getAllTweets()
 
@@ -129,26 +169,86 @@ const Dashboard = ({
 	const handleLikeTweetButton = async (feeType, tweetId) => {
 		console.log('tweetId', tweetId)
 		if (feeType === 'ethPayment') {
-			let submitLikeTx = await tweetVoteContract.likeTweet(tweetId, {
-				value: platformFees.likeWeiFee.toString(),
-			})
+			console.log('likeEthFee', platformFees.likeEthFee)
 
-			setInfoBar(`Mining... Tx${submitLikeTx.hash}`)
-			console.log('Mining... Tx', submitLikeTx.hash)
-			await submitLikeTx.wait()
-			setInfoBar(`Mined -- Tx${submitLikeTx.hash}`)
-			console.log('Mined -- Tx', submitLikeTx.hash)
+			try {
+				let submitLikeTx = await tweetVoteContract.likeTweet(tweetId, {
+					value: platformFees.likeEthFee * 10 ** 18,
+				})
+
+				console.log(submitLikeTx)
+
+				setInfoBar(`Mining... Tx${submitLikeTx.hash}`)
+				console.log('Mining... Tx', submitLikeTx.hash)
+				await submitLikeTx.wait()
+				setInfoBar(`Mined -- Tx${submitLikeTx.hash}`)
+				console.log('Mined -- Tx', submitLikeTx.hash)
+			} catch (error) {
+				console.log(error)
+			}
 		} else {
-			let submitLikeTx = await tweetVoteContract.likeTweet(tweetId)
+			try {
+				let submitLikeTx = await tweetVoteContract.likeTweet(tweetId)
 
-			console.log('Mining... Tx', submitLikeTx.hash)
-			await submitLikeTx.wait()
-			console.log('Mined -- Tx', submitLikeTx.hash)
+				setInfoBar(`Mining... Tx${submitLikeTx.hash}`)
+				console.log('Mining... Tx', submitLikeTx.hash)
+				await submitLikeTx.wait()
+				setInfoBar(`Mined -- Tx${submitLikeTx.hash}`)
+				console.log('Mined -- Tx', submitLikeTx.hash)
+			} catch (error) {
+				console.log(error)
+			}
 		}
 		getAllTweets()
 		setTimeout(function () {
 			setInfoBar('')
 		}, 2000)
+	}
+
+	const handleAddTokenMmButton = async () => {
+		const tokenAddress = TVTOKEN_CONTRACT_ADDRESS
+		const tokenSymbol = 'TVT'
+		const tokenDecimals = 18
+		const tokenImage =
+			'https://iconsplace.com/wp-content/uploads/_icons/ffa500/256/png/twitter-2-icon-11-256.png'
+
+		try {
+			const wasAdded = await ethereum.request({
+				method: 'wallet_watchAsset',
+				params: {
+					type: 'ERC20',
+					options: {
+						address: tokenAddress, // The address that the token is at.
+						symbol: tokenSymbol, // A ticker symbol or shorthand, up to 5 chars.
+						decimals: tokenDecimals, // The number of decimals in the token
+						image: tokenImage, // A string url of the token logo
+					},
+				},
+			})
+
+			if (wasAdded) {
+				console.log('Added!')
+			} else {
+				console.log("Couldn't add")
+			}
+		} catch (error) {
+			console.log(error)
+		}
+	}
+	const handleTestnetEthRequestButton = async () => {
+		try {
+			// let submitLikeTx = await tweetVoteContract.likeTweet(tweetId, {
+			// 	value: platformFees.likeEthFee * 10 ** 18,
+			// })
+			// console.log(submitLikeTx)
+			// setInfoBar(`Requestin ETH... Tx${submitLikeTx.hash}`)
+			// console.log('Requestin ETH... Tx', submitLikeTx.hash)
+			// await submitLikeTx.wait()
+			// setInfoBar(`Request Completed -- Tx${submitLikeTx.hash}`)
+			// console.log('Request Completed -- Tx', submitLikeTx.hash)
+		} catch (error) {
+			console.log(error)
+		}
 	}
 
 	const handleSortingChange = (_sortingOption) => {
@@ -159,7 +259,7 @@ const Dashboard = ({
 		switch (sortingOption) {
 			case 'date':
 				return tweets.sort(compareDate)
-			case 'likes':
+			default:
 				return tweets.sort(compareLikes)
 		}
 	}
@@ -183,10 +283,21 @@ const Dashboard = ({
 		return 0
 	}
 
+	console.log('allTweets ', allTweets)
+
 	return (
 		<div className="container-fluid px-4 py-3">
 			<nav className="navbar navbar-light bg-light">
-				<span className="navbar-brand mb-0 h1">Twitt3r</span>
+				<span className="navbar-brand mb-0 ">
+					<img
+						src={TwitterLogo}
+						alt="twitt3r orange logo"
+						width="24"
+						height="20"
+						className="d-inline-block align-text-top mx-1"
+					/>
+					Twitt3r Orange
+				</span>
 
 				{infoBar && (
 					<div className="alert alert-info w-50 " role="alert">
@@ -199,15 +310,12 @@ const Dashboard = ({
 					aria-label="Basic example"
 					data-toggle="buttons"
 				>
-					<button type="button" className="btn mx-1">
-						Sort Tweets
-					</button>
 					<button
 						type="button"
 						className={
 							sortingOption === 'date'
-								? 'btn btn-info mx-1'
-								: 'btn btn-outline-info mx-1'
+								? 'btn btn-primary mx-1'
+								: 'btn btn-outline-primary mx-1'
 						}
 						onClick={() => handleSortingChange('date')}
 					>
@@ -217,8 +325,8 @@ const Dashboard = ({
 						type="button"
 						className={
 							sortingOption === 'likes'
-								? 'btn btn-info mx-1'
-								: 'btn btn-outline-info mx-1'
+								? 'btn btn-primary mx-1'
+								: 'btn btn-outline-primary mx-1'
 						}
 						onClick={() => handleSortingChange('likes')}
 					>
@@ -229,7 +337,105 @@ const Dashboard = ({
 			<div id="dashboard-field" className="row">
 				{accountTweetAmount && platformBalance && (
 					<div id="dashboard-sidebar" className="col-2">
-						<table className="table table-striped">
+						<table className="table table-striped mb-4">
+							<thead>
+								<tr>
+									<th>Account Stats</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td>Account</td>
+									<td>
+										{currentAccount.substring(0, 6) +
+											'...' +
+											currentAccount.substring(currentAccount.length - 4)}
+									</td>
+									<td></td>
+								</tr>
+								<tr>
+									<td>Tweet IDs</td>
+									<td>
+										{accountTweetIds.map((tweetId, index) => (
+											<span key={index}> {tweetId},</span>
+										))}
+									</td>
+								</tr>
+								<tr>
+									<td>Tweet Amount</td>
+									<td>{accountTweetAmount}</td>
+								</tr>
+								<tr>
+									<td>TVT Balance</td>
+									<td>
+										{parseInt(accountTokenBalance)}{' '}
+										<button
+											type="button"
+											className="btn btn-outline-secondary btn-sm mx-2"
+											onClick={() => handleAddTokenMmButton()}
+										>
+											Add
+										</button>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+
+						<h4>Submit Tweet</h4>
+
+						<div className="input-group mb-3">
+							<span className="input-group-text" id="basic-addon1">
+								🐦
+							</span>
+							<input
+								type="text"
+								className="form-control dashboard-input"
+								placeholder="Tweet URL"
+								autoComplete="off"
+								aria-describedby="basic-addon1"
+								value={tweetUrlInput}
+								onChange={(event) => setTweetUrlInput(event.target.value)}
+								onClick={() => setTweetUrlInput('')}
+							/>
+						</div>
+						<div className="input-group mb-3">
+							<span className="input-group-text" id="basic-addon1">
+								📩
+							</span>
+							<input
+								className="form-control dashboard-input"
+								placeholder="Tip Receiver Address"
+								autoComplete="off"
+								value={feeAddressInput}
+								onChange={(event) => setFeeAddressInput(event.target.value)}
+								onClick={() => setFeeAddressInput('')}
+							/>
+						</div>
+						<div
+							className="btn-group-sm"
+							role="group"
+							aria-label="Basic example"
+						>
+							<button
+								type="button"
+								className="btn btn-outline-primary mx-1"
+								disabled={
+									!tweetUrlInput || !feeAddressInput || accountTokenBalance < 5
+								}
+								onClick={() => handleSubmitTweetButton('tokenPayment')}
+							>
+								Submit ({parseInt(platformFees.tweetTokenFee)} TVT)
+							</button>
+							<button
+								type="button"
+								className="btn btn-outline-primary mx-1"
+								disabled={!tweetUrlInput || !feeAddressInput}
+								onClick={() => handleSubmitTweetButton('ethPayment')}
+							>
+								Submit ({platformFees.tweetEthFee} Ξ)
+							</button>
+						</div>
+						<table className="table table-striped mt-4">
 							<thead>
 								<tr>
 									<th>Platform Stats</th>
@@ -257,118 +463,33 @@ const Dashboard = ({
 									<td>Tweet Fee</td>
 									<td>
 										{' '}
-										{platformFees.tweetTokenFee} TVT ||{' '}
-										{ethers.utils.formatEther(platformFees.tweetWeiFee)} Ξ
+										{parseInt(platformFees.tweetTokenFee)} TVT ||{' '}
+										{platformFees.tweetEthFee} Ξ
 									</td>
 								</tr>
 								<tr>
-									<td>Like fee</td>
+									<td>Poster Tip</td>
 									<td>
 										{' '}
-										{platformFees.likeTokenFee} TVT || *
-										{ethers.utils.formatEther(platformFees.likeWeiFee)} Ξ
+										{parseInt(platformFees.likeTokenFee)} TVT || *
+										{platformFees.likeEthFee} Ξ
 									</td>
 								</tr>
+
 								<tr>
 									<td>*Platform fee</td>
 									<td>{platformFees.platformFee}%</td>
 								</tr>
-							</tbody>
-						</table>
-
-						<table className="table table-striped">
-							<thead>
 								<tr>
-									<th>Account Stats</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>
-										{currentAccount.substring(0, 6) +
-											'...' +
-											currentAccount.substring(currentAccount.length - 4)}
-									</td>
-									<td></td>
+									<td>Tweet </td>
+									<td>Receive 5 TVT</td>
 								</tr>
 								<tr>
-									<td>Tweet IDs</td>
-									<td>
-										{accountTweetIds.map((tweetId, index) => (
-											<span key={index}> {tweetId},</span>
-										))}
-									</td>
-								</tr>
-								<tr>
-									<td>Tweet Amount</td>
-									<td>{accountTweetAmount}</td>
-								</tr>
-								<tr>
-									<td>TVT Balance</td>
-									<td>{accountTokenBalance}</td>
+									<td>Like</td>
+									<td>Receive 1 TVT</td>
 								</tr>
 							</tbody>
 						</table>
-
-						<div id="dashboard-input-form">
-							<h4>Submit Tweet</h4>
-
-							<div className="input-group mb-3">
-								<span className="input-group-text" id="basic-addon1">
-									🐦
-								</span>
-								<input
-									type="text"
-									className="form-control dashboard-input"
-									placeholder="Tweet URL"
-									autoComplete="off"
-									aria-describedby="basic-addon1"
-									value={tweetUrlInput}
-									onChange={(event) => setTweetUrlInput(event.target.value)}
-									onClick={() => setTweetUrlInput('')}
-								/>
-							</div>
-							<div className="input-group mb-3">
-								<span className="input-group-text" id="basic-addon1">
-									📩
-								</span>
-								<input
-									className="form-control dashboard-input"
-									placeholder="Like Fee Receiver Address"
-									autoComplete="off"
-									value={feeAddressInput}
-									onChange={(event) => setFeeAddressInput(event.target.value)}
-									onClick={() => setFeeAddressInput('')}
-								/>
-							</div>
-							<div
-								className="btn-group-sm"
-								role="group"
-								aria-label="Basic example"
-							>
-								<button
-									type="button"
-									className="btn btn-outline-info mx-1"
-									disabled={
-										!tweetUrlInput ||
-										!feeAddressInput ||
-										accountTokenBalance < 5
-									}
-									onClick={() => handleSubmitTweetButton('tokenPayment')}
-								>
-									Submit ({platformFees.tweetTokenFee} TVT)
-								</button>
-								<button
-									type="button"
-									className="btn btn-outline-info mx-1"
-									disabled={!tweetUrlInput || !feeAddressInput}
-									onClick={() => handleSubmitTweetButton('ethPayment')}
-								>
-									Submit ({ethers.utils.formatEther(platformFees.tweetWeiFee)}{' '}
-									Ξ)
-								</button>
-							</div>
-						</div>
 					</div>
 				)}
 
@@ -382,30 +503,38 @@ const Dashboard = ({
 										<div className="dashboard-tweet col-3 mx-5" key={index}>
 											<div className="dashboard-tweet-interaction-field mb-5">
 												<TwitterTweetEmbed tweetId={tweet.url} />
+
+												{tweet.url}
 												<div
 													className="btn-group-sm"
 													role="group"
 													aria-label="Basic example"
 												>
-													<div className="btn ">❤️ {tweet.likes} </div>
+													<button className="btn ">❤️ {tweet.likes} </button>
+
 													<button
-														className="btn btn-outline-info mx-1"
+														className="btn btn-outline-primary mx-1"
 														disabled={accountTokenBalance < 1}
 														onClick={() =>
 															handleLikeTweetButton('tokenPayment', tweet.id)
 														}
 													>
-														♡ ({platformFees.likeTokenFee} TVT)
+														♡ ({parseInt(platformFees.likeTokenFee)} TVT)
 													</button>
 													<button
-														className="btn btn-outline-info mx-1"
+														className="btn btn-outline-primary mx-1"
 														onClick={() =>
 															handleLikeTweetButton('ethPayment', tweet.id)
 														}
 													>
-														♡ (
-														{ethers.utils.formatEther(platformFees.likeWeiFee)}{' '}
-														Ξ)
+														♡ ({platformFees.likeEthFee} Ξ)
+													</button>
+													<button className="btn mx-1">
+														{tweet.feeReceiver.substring(0, 5) +
+															'...' +
+															tweet.feeReceiver.substring(
+																tweet.feeReceiver.length - 3
+															)}
 													</button>
 												</div>
 											</div>
