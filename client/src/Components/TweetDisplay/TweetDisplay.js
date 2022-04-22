@@ -55,6 +55,7 @@ const TweetDisplay = ({
 				await submitLikeTx.wait()
 				setInfoBar(`Mined -- Tx${submitLikeTx.hash}`)
 				console.log('Mined -- Tx', submitLikeTx.hash)
+				window.location.reload(true)
 			} catch (error) {
 				console.log(error)
 			}
