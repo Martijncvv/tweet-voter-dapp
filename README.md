@@ -1,15 +1,11 @@
-# Basic Sample Hardhat Project
+## Twitt3r Orange
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+Web3 platform to share and view valuable Tweets
 
-Try running some of the following tasks:
+[Twitt3r Orange Website](https://twitt3r-orange.netlify.app/)
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+## Dashboard Preview
+
+<p align="center">
+  <img src="TO_dashboard_page.png" alt="Twitt3r Orange Website" width="800" >
+</p>
