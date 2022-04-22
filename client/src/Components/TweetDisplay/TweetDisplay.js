@@ -115,7 +115,6 @@ const TweetDisplay = ({
 									<div className="dashboard-tweet-interaction-field mb-5">
 										<TwitterTweetEmbed tweetId={tweet.url} />
 
-										{tweet.url}
 										<div
 											className="btn-group-sm"
 											role="group"

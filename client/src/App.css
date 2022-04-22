@@ -3,9 +3,6 @@ body {
 	height: 100%;
 }
 
-.App {
-	/* background-color: #cccccc; */
-}
 #background {
 	height: 100%;
 	width: 100%;
@@ -17,5 +14,5 @@ body {
 	background-position: center;
 	background-repeat: no-repeat;
 	background-size: cover;
-	filter: blur(2px);
+	filter: blur(3px);
 }

@@ -27,7 +27,7 @@ const Navbar = ({ infoBar, sortingOption, setSortingOption }) => {
 				</div>
 			)}
 
-			<div
+			{/* <div
 				className="col-2 btn btn-group-toggle "
 				aria-label="Basic example"
 				data-toggle="buttons"
@@ -54,7 +54,7 @@ const Navbar = ({ infoBar, sortingOption, setSortingOption }) => {
 				>
 					Likes
 				</button>
-			</div>
+			</div> */}
 		</nav>
 	)
 }
