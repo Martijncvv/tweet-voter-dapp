@@ -19,7 +19,7 @@ const ConnectWallet = ({ connectWallet }) => {
 				disabled={isLoading}
 				onClick={() => (!isLoading ? handleClick() : null)}
 			>
-				{isLoading ? 'Connecting…' : 'Connect'}
+				{isLoading ? 'Connecting…' : 'Connect Wallet'}
 			</Button>
 		</div>
 	)

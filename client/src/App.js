@@ -113,7 +113,27 @@ function App() {
 			<div>
 				{!currentAccount && (
 					<div>
-						<ConnectWallet connectWallet={connectWallet} />
+						<div id="background"></div>
+
+						<div className="container">
+							<div className="row mt-5">
+								<div className="col-sm-2"></div>
+								<div className="col-sm-8">
+									<div className="card text-center">
+										<div className="card-header"></div>
+										<div className="card-body">
+											<h5 className="card-title">Twitter Orange3</h5>
+											<p className="card-text">
+												Web3 platform to share and view valuable Tweets
+											</p>
+											<ConnectWallet connectWallet={connectWallet} />
+										</div>
+										<div className="card-footer text-muted">By Marty_cFly</div>
+									</div>
+								</div>
+								<div className="col-sm-2"></div>
+							</div>
+						</div>
 					</div>
 				)}
 			</div>
